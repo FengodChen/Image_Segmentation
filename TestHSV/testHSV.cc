@@ -6,13 +6,15 @@ using namespace cv;
 #include<string>
 using namespace std;
 //输入图像
+Mat srcImg;
+//双边化图像
 Mat img;
 //灰度值归一化
 Mat bgr;
 //HSV图像
 Mat hsv;
 //色相
-int hmin = 0;
+int hmin = 132;
 int hmin_Max = 360;
 int hmax = 360;
 int hmax_Max = 360;
@@ -22,19 +24,35 @@ int smin_Max = 255;
 int smax = 255;
 int smax_Max = 255;
 //亮度
-int vmin = 106;
+int vmin = 170;
 int vmin_Max = 255;
 int vmax = 250;
 int vmax_Max = 255;
+//过滤直径
+int d = 20;
+int d_Max = 100;
+//色彩方差
+int sC = 337;
+int sC_Max = 500;
+//空间方差
+int sS = 0;
+int sS_Max = 500;
 //显示原图的窗口
 string windowName = "src";
 //输出图像的显示窗口
-string dstName = "dst";
+string dstName = "Setting";
 //输出图像
 Mat dst;
 //回调函数
 void callBack(int, void*)
 {
+	//双边化图像
+	bilateralFilter(srcImg, img, d, sC, sS);
+	imshow("SRC_BF", img);
+	//彩色图像的灰度值归一化
+	img.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
+	//颜色空间转换
+	cvtColor(bgr, hsv, COLOR_BGR2HSV);
 	//输出图像分配内存
 	dst = Mat::zeros(img.size(), CV_32FC3);
 	//掩码
@@ -51,26 +69,18 @@ void callBack(int, void*)
 			}
 		}
 	}
-	// cv::cvtColor(dst, dst, cv::COLOR_BGR2RGB, dst.channels());
-	//输出图像
-	// imshow(dstName, dst);
-	//保存图像
 	dst.convertTo(dst, CV_8UC3, 255.0, 0);
 	imwrite("HSV_inRange.jpg", dst);
 	dst = imread("HSV_inRange.jpg", IMREAD_COLOR);
-	imshow("DST", dst);
+	imshow("HSV", dst);
 }
 int main(int argc, char*argv[])
 {
 	//输入图像
-	img = imread(argv[1], IMREAD_COLOR);
-	if (!img.data || img.channels() != 3)
+	srcImg = imread(argv[1], IMREAD_COLOR);
+	if (!srcImg.data || srcImg.channels() != 3)
 		return -1;
-	imshow(windowName, img);
-	//彩色图像的灰度值归一化
-	img.convertTo(bgr, CV_32FC3, 1.0 / 255, 0);
-	//颜色空间转换
-	cvtColor(bgr, hsv, COLOR_BGR2HSV);
+	imshow("SRC", srcImg);
 	//定义输出图像的显示窗口
 	namedWindow(dstName, WINDOW_GUI_EXPANDED);
 	//调节色相 H
@@ -82,6 +92,12 @@ int main(int argc, char*argv[])
 	//调节亮度 V
 	createTrackbar("vmin", dstName, &vmin, vmin_Max, callBack);
 	createTrackbar("vmax", dstName, &vmax, vmax_Max, callBack);
+	//调节过滤直径d
+	createTrackbar("d", dstName, &d, d_Max, callBack);
+	//调节色彩方差sC
+	createTrackbar("sC", dstName, &sC, sC_Max, callBack);
+	//调节空间方差sS
+	createTrackbar("sS", dstName, &sS, sS_Max, callBack);
 	callBack(0, 0);
 	waitKey(0);
 	return 0;
